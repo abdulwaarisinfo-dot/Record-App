@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sales Records</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #14213d; --ink-soft: #5b6478; --line: #dde2ec; --paper: #f5f7fb;
+    --card: #ffffff; --accent: #0f766e; --accent-dark: #0b5a54; --danger: #b42318;
+    --row-alt: #f9fafc;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+         font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 15px; line-height: 1.5; }
+  .num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  button, input { font: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- login ---------- */
+  .login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+  .login { width: 100%; max-width: 380px; background: var(--card); border: 1px solid var(--line);
+           border-radius: 10px; padding: 32px; }
+  .login h1 { margin: 0 0 4px; font-size: 22px; }
+  .login p { margin: 0 0 24px; color: var(--ink-soft); }
+
+  /* ---------- shared form bits ---------- */
+  label { display: block; font-size: 13px; font-weight: 500; color: var(--ink-soft); margin-bottom: 4px; }
+  input { width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 6px;
+          background: #fff; color: var(--ink); }
+  input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(15,118,110,.15); }
+  input[readonly] { background: var(--row-alt); font-weight: 600; }
+  .field { margin-bottom: 14px; }
+  .btn { border: 0; border-radius: 6px; padding: 10px 18px; font-weight: 600; cursor: pointer;
+         background: var(--accent); color: #fff; }
+  .btn:hover { background: var(--accent-dark); }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .btn.ghost:hover { background: var(--paper); }
+  .btn.full { width: 100%; }
+  .error { background: #fef3f2; color: var(--danger); border: 1px solid #fecdca;
+           padding: 9px 12px; border-radius: 6px; margin-bottom: 14px; font-size: 14px; }
+
+  /* ---------- app ---------- */
+  header { background: var(--ink); color: #fff; }
+  .bar { max-width: 1180px; margin: 0 auto; padding: 14px 24px; display: flex;
+         align-items: center; justify-content: space-between; gap: 12px; }
+  .bar h1 { margin: 0; font-size: 18px; font-weight: 600; }
+  .bar a { color: #c9d2e6; text-decoration: none; font-size: 14px; }
+  .bar a:hover { color: #fff; }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+  .card h2 { margin: 0 0 16px; font-size: 16px; }
+
+  .form-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; align-items: end; }
+  .form-grid .field { margin: 0; }
+  .form-actions { grid-column: 1 / -1; display: flex; gap: 10px; justify-content: flex-end; }
+  .msg { min-height: 20px; margin-top: 10px; font-size: 14px; }
+  .msg.err { color: var(--danger); } .msg.ok { color: var(--accent); }
+
+  .list-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .list-head h2 { margin: 0; }
+  .list-head input { max-width: 260px; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 760px; }
+  th, td { padding: 11px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font-size: 13px; font-weight: 600; color: var(--ink-soft); background: var(--row-alt); }
+  tbody tr:hover { background: var(--row-alt); }
+  th.r, td.r { text-align: right; }
+  tfoot td { font-weight: 600; border-bottom: 0; background: var(--row-alt); }
+  .act button { background: none; border: 0; color: var(--accent); cursor: pointer; font-weight: 500; padding: 2px 6px; }
+  .act button.del { color: var(--danger); }
+  .empty { text-align: center; color: var(--ink-soft); padding: 28px 0; }
+
+  @media (max-width: 900px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .form-grid { grid-template-columns: 1fr; } main { padding: 16px; } }
+</style>
+</head>
+<body>
+
+{% if not logged_in %}
+<div class="login-wrap">
+  <form class="login" method="post" action="/login">
+    <h1>Sales Records</h1>
+    <p>Sign in to view and manage your sales.</p>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <div class="field"><label for="email">Email</label>
+      <input id="email" name="email" type="email" required autocomplete="username"></div>
+    <div class="field"><label for="password">Password</label>
+      <input id="password" name="password" type="password" required autocomplete="current-password"></div>
+    <button class="btn full" type="submit">Sign in</button>
+  </form>
+</div>
+
+{% else %}
+<header><div class="bar">
+  <h1>Sales Records</h1>
+  <div><span style="color:#c9d2e6;font-size:14px;margin-right:16px">{{ email }}</span><a href="/logout">Sign out</a></div>
+</div></header>
+
+<main>
+  <section class="card">
+    <h2 id="formTitle">New sale</h2>
+    <div class="form-grid">
+      <div class="field"><label for="date">Date</label><input id="date" type="date"></div>
+      <div class="field"><label for="bill">Bill number</label><input id="bill" type="text"></div>
+      <div class="field"><label for="quality">Quality</label><input id="quality" type="text"></div>
+      <div class="field"><label for="qty">Quantity</label><input id="qty" type="number" min="0" step="any"></div>
+      <div class="field"><label for="rate">Rate</label><input id="rate" type="number" min="0" step="any"></div>
+      <div class="field"><label for="total">Total amount</label><input id="total" class="num" type="text" readonly value="0.00"></div>
+      <div class="form-actions">
+        <button class="btn ghost" id="cancelBtn" type="button" hidden>Cancel edit</button>
+        <button class="btn" id="saveBtn" type="button">Save sale</button>
+      </div>
+    </div>
+    <div class="msg" id="msg" role="status"></div>
+  </section>
+
+  <section class="card">
+    <div class="list-head">
+      <h2>All sales</h2>
+      <input id="search" type="search" placeholder="Search bill number or quality">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Sr.</th><th>Date</th><th>Bill number</th><th>Quality</th>
+          <th class="r">Quantity</th><th class="r">Rate</th><th class="r">Total amount</th><th></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+        <tfoot><tr>
+          <td colspan="4">Total</td>
+          <td class="r num" id="sumQty">0</td><td></td>
+          <td class="r num" id="sumAmt">0.00</td><td></td>
+        </tr></tfoot>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+  const $ = id => document.getElementById(id);
+  let all = [], editId = null;
+  const money = n => Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  function say(text, kind) { const m = $("msg"); m.textContent = text; m.className = "msg " + (kind || ""); }
+
+  async function api(url, method, body) {
+    const res = await fetch(url, { method: method || "GET",
+      headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+    if (res.status === 401) { location.href = "/"; return; }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const d = data.detail;
+      throw new Error(typeof d === "string" ? d : "Please check all fields and try again.");
+    }
+    return data;
+  }
+
+  function updateTotal() { $("total").value = money((+$("qty").value || 0) * (+$("rate").value || 0)); }
+  ["qty", "rate"].forEach(i => $(i).addEventListener("input", updateTotal));
+
+  async function resetForm() {
+    editId = null;
+    ["quality", "qty", "rate"].forEach(i => $(i).value = "");
+    $("date").value = new Date().toISOString().slice(0, 10);
+    $("formTitle").textContent = "New sale";
+    $("saveBtn").textContent = "Save sale";
+    $("cancelBtn").hidden = true;
+    updateTotal();
+    try { $("bill").value = (await api("/api/next-bill")).bill_number; } catch (e) { $("bill").value = ""; }
+  }
+
+  function render() {
+    const q = $("search").value.trim().toLowerCase();
+    const list = all.filter(r => !q || r.bill_number.toLowerCase().includes(q) || r.quality.toLowerCase().includes(q));
+    $("rows").innerHTML = list.length ? list.map(r => `
+      <tr>
+        <td class="num">${r.sr}</td>
+        <td class="num">${esc(r.date)}</td>
+        <td class="num">${esc(r.bill_number)}</td>
+        <td>${esc(r.quality)}</td>
+        <td class="r num">${r.quantity}</td>
+        <td class="r num">${money(r.rate)}</td>
+        <td class="r num">${money(r.total_amount)}</td>
+        <td class="act r">
+          <button onclick="startEdit('${r.id}')">Edit</button>
+          <button class="del" onclick="removeRec('${r.id}')">Delete</button>
+        </td>
+      </tr>`).join("") : `<tr><td class="empty" colspan="8">No sales yet. Add your first sale above.</td></tr>`;
+    $("sumQty").textContent = list.reduce((s, r) => s + r.quantity, 0);
+    $("sumAmt").textContent = money(list.reduce((s, r) => s + r.total_amount, 0));
+  }
+
+  async function load() { all = await api("/api/records"); render(); }
+
+  async function save() {
+    const body = { date: $("date").value, bill_number: $("bill").value, quality: $("quality").value,
+                   quantity: parseFloat($("qty").value), rate: parseFloat($("rate").value) };
+    if (!body.date || !body.bill_number.trim() || !body.quality.trim() || !(body.quantity > 0) || isNaN(body.rate)) {
+      return say("Fill in every field. Quantity must be more than 0.", "err");
+    }
+    try {
+      const wasEdit = !!editId;
+      await api(editId ? "/api/records/" + editId : "/api/records", editId ? "PUT" : "POST", body);
+      await load(); await resetForm();
+      say(wasEdit ? "Sale updated." : "Sale saved.", "ok");
+    } catch (e) { say(e.message, "err"); }
+  }
+
+  function startEdit(id) {
+    const r = all.find(x => x.id === id); if (!r) return;
+    editId = id;
+    $("date").value = r.date; $("bill").value = r.bill_number; $("quality").value = r.quality;
+    $("qty").value = r.quantity; $("rate").value = r.rate; updateTotal();
+    $("formTitle").textContent = "Edit sale (Sr. " + r.sr + ")";
+    $("saveBtn").textContent = "Update sale"; $("cancelBtn").hidden = false;
+    say(""); window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function removeRec(id) {
+    if (!confirm("Delete this sale? This cannot be undone.")) return;
+    try { await api("/api/records/" + id, "DELETE"); await load(); say("Sale deleted.", "ok"); }
+    catch (e) { say(e.message, "err"); }
+  }
+
+  $("saveBtn").addEventListener("click", save);
+  $("cancelBtn").addEventListener("click", () => { resetForm(); say(""); });
+  $("search").addEventListener("input", render);
+  document.querySelectorAll(".form-grid input").forEach(i =>
+    i.addEventListener("keydown", e => { if (e.key === "Enter") save(); }));
+
+  resetForm(); load();
+</script>
+{% endif %}
+</body>
+</html>
