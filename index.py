@@ -1,7 +1,7 @@
 """
 Sales Record App  -  FastAPI + MongoDB + Jinja2
 Run:  uvicorn index:app --reload
-Install:  pip install fastapi "uvicorn[standard]" motor jinja2 python-multipart itsdangerous
+Install:  pip install fastapi "uvicorn[standard]" motor jinja2 python-multipart itsdangerous python-dotenv httpx
 
 Env vars (optional):
   MONGO_URL       default mongodb://localhost:27017
@@ -9,7 +9,10 @@ Env vars (optional):
   SECRET_KEY      session signing key (change in production!)
   ADMIN_EMAIL     first user, created automatically   default admin@example.com
   ADMIN_PASSWORD  first user's password               default admin123
+  PING_URL        public URL to ping (Render sets RENDER_EXTERNAL_URL automatically)
+  PING_INTERVAL   seconds between pings                default 20
 """
+import asyncio
 import hashlib
 import hmac
 import os
@@ -17,6 +20,7 @@ import secrets
 from contextlib import asynccontextmanager
 from datetime import date
 
+import httpx
 from bson import ObjectId
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse
@@ -24,12 +28,17 @@ from fastapi.templating import Jinja2Templates
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field
 from starlette.middleware.sessions import SessionMiddleware
+from dotenv import load_dotenv
+
+load_dotenv()  # reads the .env file
 
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
 DB_NAME = os.getenv("DB_NAME", "sales_db")
 SECRET_KEY = os.getenv("SECRET_KEY", "change-this-secret-key")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@example.com").strip().lower()
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+PING_URL = (os.getenv("PING_URL") or os.getenv("RENDER_EXTERNAL_URL") or "").rstrip("/")
+PING_INTERVAL = int(os.getenv("PING_INTERVAL", "20"))
 
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
@@ -50,6 +59,20 @@ def verify_password(password: str, stored: str) -> bool:
     return hmac.compare_digest(hash_password(password, salt), stored)
 
 
+# ---------- keep-alive ping ----------
+async def keep_alive():
+    """Pings this server's own public URL so the host does not put it to sleep."""
+    if not PING_URL:
+        return  # running locally, nothing to ping
+    async with httpx.AsyncClient(timeout=10) as http:
+        while True:
+            await asyncio.sleep(PING_INTERVAL)
+            try:
+                await http.get(f"{PING_URL}/ping")
+            except Exception:
+                pass  # ignore; try again on the next round
+
+
 # ---------- startup ----------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -57,7 +80,9 @@ async def lifespan(app: FastAPI):
     await records.create_index("bill_number", unique=True)
     if not await users.find_one({"email": ADMIN_EMAIL}):
         await users.insert_one({"email": ADMIN_EMAIL, "password": hash_password(ADMIN_PASSWORD)})
+    ping_task = asyncio.create_task(keep_alive())
     yield
+    ping_task.cancel()
     client.close()
 
 
@@ -110,6 +135,11 @@ def oid(record_id: str) -> ObjectId:
 
 
 # ---------- pages ----------
+@app.api_route("/ping", methods=["GET", "HEAD"])
+async def ping():
+    return {"status": "ok"}
+
+
 @app.get("/")
 async def home(request: Request):
     return templates.TemplateResponse(
