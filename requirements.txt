@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+motor
+jinja2
+python-multipart
+itsdangerous
+python-dotenv
