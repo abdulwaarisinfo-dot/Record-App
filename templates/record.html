@@ -2,79 +2,146 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
 <title>Sales Records</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ink: #14213d; --ink-soft: #5b6478; --line: #dde2ec; --paper: #f5f7fb;
-    --card: #ffffff; --accent: #0f766e; --accent-dark: #0b5a54; --danger: #b42318;
-    --row-alt: #f9fafc;
+    --ink: #14213d; --ink-soft: #5b6478; --line: #dde2ec; --paper: #f3f5f9;
+    --card: #ffffff; --accent: #0f766e; --accent-dark: #0b5a54; --accent-tint: #e6f4f2;
+    --danger: #b42318; --danger-tint: #fef3f2; --row-alt: #f8f9fc;
+    --radius: 10px; --shadow: 0 1px 2px rgba(20,33,61,.06), 0 4px 14px rgba(20,33,61,.04);
   }
   * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
   body { margin: 0; background: var(--paper); color: var(--ink);
-         font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 15px; line-height: 1.5; }
-  .num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+         font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         font-size: 15px; line-height: 1.5; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .num { font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
   button, input { font: inherit; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   /* ---------- login ---------- */
-  .login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
-  .login { width: 100%; max-width: 380px; background: var(--card); border: 1px solid var(--line);
-           border-radius: 10px; padding: 32px; }
-  .login h1 { margin: 0 0 4px; font-size: 22px; }
+  .login-wrap { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 20px; }
+  .login { width: 100%; max-width: 400px; background: var(--card); border: 1px solid var(--line);
+           border-radius: 14px; padding: 32px; box-shadow: var(--shadow); }
+  .login h1 { margin: 0 0 4px; font-size: 24px; letter-spacing: -.01em; }
   .login p { margin: 0 0 24px; color: var(--ink-soft); }
 
-  /* ---------- shared form bits ---------- */
-  label { display: block; font-size: 13px; font-weight: 500; color: var(--ink-soft); margin-bottom: 4px; }
-  input { width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 6px;
-          background: #fff; color: var(--ink); }
-  input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(15,118,110,.15); }
-  input[readonly] { background: var(--row-alt); font-weight: 600; }
+  /* ---------- form controls ---------- */
+  label { display: block; font-size: 13px; font-weight: 500; color: var(--ink-soft); margin-bottom: 5px; }
+  input { width: 100%; min-height: 42px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px;
+          background: #fff; color: var(--ink); transition: border-color .15s, box-shadow .15s; }
+  input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(15,118,110,.16); }
+  input[readonly] { background: var(--accent-tint); border-color: transparent; font-weight: 600; color: var(--accent-dark); }
   .field { margin-bottom: 14px; }
-  .btn { border: 0; border-radius: 6px; padding: 10px 18px; font-weight: 600; cursor: pointer;
-         background: var(--accent); color: #fff; }
+  .btn { border: 0; border-radius: 8px; min-height: 42px; padding: 10px 20px; font-weight: 600; cursor: pointer;
+         background: var(--accent); color: #fff; transition: background .15s; }
   .btn:hover { background: var(--accent-dark); }
-  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .btn.ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
   .btn.ghost:hover { background: var(--paper); }
   .btn.full { width: 100%; }
-  .error { background: #fef3f2; color: var(--danger); border: 1px solid #fecdca;
-           padding: 9px 12px; border-radius: 6px; margin-bottom: 14px; font-size: 14px; }
+  .error { background: var(--danger-tint); color: var(--danger); border: 1px solid #fecdca;
+           padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; font-size: 14px; }
 
-  /* ---------- app ---------- */
-  header { background: var(--ink); color: #fff; }
+  /* ---------- header ---------- */
+  header { background: var(--ink); color: #fff; padding-top: env(safe-area-inset-top, 0px); }
   .bar { max-width: 1180px; margin: 0 auto; padding: 14px 24px; display: flex;
          align-items: center; justify-content: space-between; gap: 12px; }
   .bar h1 { margin: 0; font-size: 18px; font-weight: 600; }
-  .bar a { color: #c9d2e6; text-decoration: none; font-size: 14px; }
-  .bar a:hover { color: #fff; }
+  .user { display: flex; align-items: center; gap: 16px; min-width: 0; }
+  .user span { color: #c9d2e6; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .user a { color: #fff; text-decoration: none; font-size: 14px; border: 1px solid rgba(255,255,255,.28);
+            padding: 6px 12px; border-radius: 6px; white-space: nowrap; }
+  .user a:hover { background: rgba(255,255,255,.1); }
+
   main { max-width: 1180px; margin: 0 auto; padding: 24px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+
+  /* ---------- summary ---------- */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+          padding: 16px 20px; box-shadow: var(--shadow); }
+  .stat small { display: block; color: var(--ink-soft); font-size: 13px; }
+  .stat strong { display: block; font-size: 24px; font-weight: 600; margin-top: 2px; letter-spacing: -.01em; overflow-wrap: anywhere; }
+
+  /* ---------- cards ---------- */
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+          padding: 22px; margin-bottom: 20px; box-shadow: var(--shadow); }
   .card h2 { margin: 0 0 16px; font-size: 16px; }
 
   .form-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; align-items: end; }
-  .form-grid .field { margin: 0; }
+  .form-grid .field { margin: 0; min-width: 0; }
   .form-actions { grid-column: 1 / -1; display: flex; gap: 10px; justify-content: flex-end; }
-  .msg { min-height: 20px; margin-top: 10px; font-size: 14px; }
+  .msg { min-height: 20px; margin-top: 12px; font-size: 14px; }
   .msg.err { color: var(--danger); } .msg.ok { color: var(--accent); }
 
+  /* ---------- table ---------- */
   .list-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
   .list-head h2 { margin: 0; }
-  .list-head input { max-width: 260px; }
-  .table-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; min-width: 760px; }
-  th, td { padding: 11px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .list-head input { max-width: 280px; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
   th { font-size: 13px; font-weight: 600; color: var(--ink-soft); background: var(--row-alt); }
+  tbody tr:last-child td { border-bottom: 0; }
   tbody tr:hover { background: var(--row-alt); }
   th.r, td.r { text-align: right; }
-  tfoot td { font-weight: 600; border-bottom: 0; background: var(--row-alt); }
-  .act button { background: none; border: 0; color: var(--accent); cursor: pointer; font-weight: 500; padding: 2px 6px; }
+  tfoot td { font-weight: 600; border-top: 1px solid var(--line); border-bottom: 0; background: var(--row-alt); }
+  .act { text-align: right; }
+  .act button { background: none; border: 0; color: var(--accent); cursor: pointer; font-weight: 500; padding: 6px 8px; border-radius: 6px; }
+  .act button:hover { background: var(--accent-tint); }
   .act button.del { color: var(--danger); }
-  .empty { text-align: center; color: var(--ink-soft); padding: 28px 0; }
+  .act button.del:hover { background: var(--danger-tint); }
+  .empty { text-align: center; color: var(--ink-soft); padding: 32px 12px; white-space: normal; }
 
-  @media (max-width: 900px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 480px) { .form-grid { grid-template-columns: 1fr; } main { padding: 16px; } }
+  /* ---------- tablet ---------- */
+  @media (max-width: 900px) {
+    .form-grid { grid-template-columns: repeat(2, 1fr); }
+    .stats { gap: 12px; }
+    .stat { padding: 14px 16px; }
+    .stat strong { font-size: 20px; }
+  }
+
+  /* ---------- phone: table becomes cards ---------- */
+  @media (max-width: 640px) {
+    body { font-size: 16px; }
+    .bar { padding: 12px 16px; }
+    .user span { display: none; }
+    main { padding: 16px; }
+    .card { padding: 16px; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .stats .stat:last-child { grid-column: 1 / -1; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-actions { flex-direction: column-reverse; }
+    .form-actions .btn { width: 100%; }
+    .list-head input { max-width: none; width: 100%; }
+    input { font-size: 16px; } /* prevents iOS zoom on focus */
+
+    .table-wrap { border: 0; overflow: visible; }
+    table, tbody, tfoot { display: block; }
+    thead { display: none; }
+    tbody tr { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; padding: 14px;
+               border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; background: #fff; }
+    tbody tr:hover { background: #fff; }
+    tbody td { display: block; padding: 0; border: 0; white-space: normal; }
+    tbody td[data-label]::before { content: attr(data-label); display: block; font-size: 12px; color: var(--ink-soft); }
+    tbody td.r { text-align: left; }
+    tbody td.act { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end;
+                   margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+    tbody td.act button { min-height: 40px; padding: 8px 16px; border: 1px solid var(--line); }
+    tbody td.act button.del { border-color: #fecdca; }
+    tbody td.empty { grid-column: 1 / -1; }
+    tbody tr:has(.empty) { display: block; }
+    tfoot tr { display: flex; justify-content: space-between; gap: 8px; padding: 14px; border-radius: 10px; background: var(--ink); color: #fff; }
+    tfoot td { display: block; padding: 0; background: none; border: 0; }
+    tfoot td:empty, tfoot td[colspan="4"] { display: none; }
+    tfoot td.r::before { content: attr(data-label) ": "; font-weight: 400; color: #c9d2e6; }
+  }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
 </style>
 </head>
 <body>
@@ -84,7 +151,7 @@
   <form class="login" method="post" action="/login">
     <h1>Sales Records</h1>
     <p>Sign in to view and manage your sales.</p>
-    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    {% if error %}<div class="error" role="alert">{{ error }}</div>{% endif %}
     <div class="field"><label for="email">Email</label>
       <input id="email" name="email" type="email" required autocomplete="username"></div>
     <div class="field"><label for="password">Password</label>
@@ -96,43 +163,49 @@
 {% else %}
 <header><div class="bar">
   <h1>Sales Records</h1>
-  <div><span style="color:#c9d2e6;font-size:14px;margin-right:16px">{{ email }}</span><a href="/logout">Sign out</a></div>
+  <div class="user"><span>{{ email }}</span><a href="/logout">Sign out</a></div>
 </div></header>
 
 <main>
+  <div class="stats" aria-label="Summary">
+    <div class="stat"><small>Sales</small><strong class="num" id="statCount">0</strong></div>
+    <div class="stat"><small>Total quantity</small><strong class="num" id="statQty">0</strong></div>
+    <div class="stat"><small>Total revenue</small><strong class="num" id="statAmt">0.00</strong></div>
+  </div>
+
   <section class="card">
     <h2 id="formTitle">New sale</h2>
     <div class="form-grid">
       <div class="field"><label for="date">Date</label><input id="date" type="date"></div>
       <div class="field"><label for="bill">Bill number</label><input id="bill" type="text"></div>
       <div class="field"><label for="quality">Quality</label><input id="quality" type="text"></div>
-      <div class="field"><label for="qty">Quantity</label><input id="qty" type="number" min="0" step="any"></div>
-      <div class="field"><label for="rate">Rate</label><input id="rate" type="number" min="0" step="any"></div>
+      <div class="field"><label for="qty">Quantity</label><input id="qty" type="number" min="0" step="any" inputmode="decimal"></div>
+      <div class="field"><label for="rate">Rate</label><input id="rate" type="number" min="0" step="any" inputmode="decimal"></div>
       <div class="field"><label for="total">Total amount</label><input id="total" class="num" type="text" readonly value="0.00"></div>
       <div class="form-actions">
         <button class="btn ghost" id="cancelBtn" type="button" hidden>Cancel edit</button>
         <button class="btn" id="saveBtn" type="button">Save sale</button>
       </div>
     </div>
-    <div class="msg" id="msg" role="status"></div>
+    <div class="msg" id="msg" role="status" aria-live="polite"></div>
   </section>
 
   <section class="card">
     <div class="list-head">
       <h2>All sales</h2>
-      <input id="search" type="search" placeholder="Search bill number or quality">
+      <input id="search" type="search" placeholder="Search bill number or quality" aria-label="Search sales">
     </div>
     <div class="table-wrap">
       <table>
         <thead><tr>
           <th>Sr.</th><th>Date</th><th>Bill number</th><th>Quality</th>
-          <th class="r">Quantity</th><th class="r">Rate</th><th class="r">Total amount</th><th></th>
+          <th class="r">Quantity</th><th class="r">Rate</th><th class="r">Total amount</th><th><span class="sr-only" style="position:absolute;left:-9999px">Actions</span></th>
         </tr></thead>
         <tbody id="rows"></tbody>
         <tfoot><tr>
           <td colspan="4">Total</td>
-          <td class="r num" id="sumQty">0</td><td></td>
-          <td class="r num" id="sumAmt">0.00</td><td></td>
+          <td class="r num" id="sumQty" data-label="Quantity">0</td><td></td>
+          <td class="r num" id="sumAmt" data-label="Amount">0.00</td><td></td>
         </tr></tfoot>
       </table>
     </div>
@@ -178,20 +251,25 @@
     const list = all.filter(r => !q || r.bill_number.toLowerCase().includes(q) || r.quality.toLowerCase().includes(q));
     $("rows").innerHTML = list.length ? list.map(r => `
       <tr>
-        <td class="num">${r.sr}</td>
-        <td class="num">${esc(r.date)}</td>
-        <td class="num">${esc(r.bill_number)}</td>
-        <td>${esc(r.quality)}</td>
-        <td class="r num">${r.quantity}</td>
-        <td class="r num">${money(r.rate)}</td>
-        <td class="r num">${money(r.total_amount)}</td>
-        <td class="act r">
+        <td class="num" data-label="Sr.">${r.sr}</td>
+        <td class="num" data-label="Date">${esc(r.date)}</td>
+        <td class="num" data-label="Bill number">${esc(r.bill_number)}</td>
+        <td data-label="Quality">${esc(r.quality)}</td>
+        <td class="r num" data-label="Quantity">${r.quantity}</td>
+        <td class="r num" data-label="Rate">${money(r.rate)}</td>
+        <td class="r num" data-label="Total amount">${money(r.total_amount)}</td>
+        <td class="act">
           <button onclick="startEdit('${r.id}')">Edit</button>
           <button class="del" onclick="removeRec('${r.id}')">Delete</button>
         </td>
-      </tr>`).join("") : `<tr><td class="empty" colspan="8">No sales yet. Add your first sale above.</td></tr>`;
-    $("sumQty").textContent = list.reduce((s, r) => s + r.quantity, 0);
-    $("sumAmt").textContent = money(list.reduce((s, r) => s + r.total_amount, 0));
+      </tr>`).join("") : `<tr><td class="empty" colspan="8">${all.length ? "No sales match your search." : "No sales yet. Add your first sale above."}</td></tr>`;
+
+    const qty = list.reduce((s, r) => s + r.quantity, 0), amt = list.reduce((s, r) => s + r.total_amount, 0);
+    $("sumQty").textContent = qty; $("sumAmt").textContent = money(amt);
+
+    $("statCount").textContent = all.length;
+    $("statQty").textContent = all.reduce((s, r) => s + r.quantity, 0);
+    $("statAmt").textContent = money(all.reduce((s, r) => s + r.total_amount, 0));
   }
 
   async function load() { all = await api("/api/records"); render(); }
